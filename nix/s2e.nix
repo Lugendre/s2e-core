@@ -81,32 +81,48 @@ stdenv.mkDerivation rec {
     mkdir -p $out/share/s2e/default-settings/environment/space_weather
     cp ${s2e-extlibs}/space_weather/SpaceWeather-v1.2.txt $out/share/s2e/default-settings/environment/space_weather/
 
-    # Create wrapper script
-    cat > $out/bin/s2e << 'EOF'
+    # Create s2e-init wrapper script (settings initialization)
+    cat > $out/bin/s2e-init << 'EOF'
 #!/usr/bin/env bash
 set -e
 
 DEFAULT_SETTINGS="@out@/share/s2e/default-settings"
 
-# Initialize settings directory if it doesn't exist
-if [ ! -d "./settings" ]; then
-  echo "Initializing S2E settings directory..."
-  cp -r "$DEFAULT_SETTINGS" ./settings
-  chmod -R u+w ./settings
-  echo "Settings directory created at: ./settings"
-  echo "You can now edit configuration files in ./settings/"
+if [ -d "./settings" ]; then
+  echo "Settings directory already exists at: ./settings"
+  echo "Remove it first if you want to reinitialize."
+  exit 1
 fi
 
-# Create logs directory
+echo "Initializing S2E settings directory..."
+cp -r "$DEFAULT_SETTINGS" ./settings
+chmod -R u+w ./settings
 mkdir -p ./logs
+echo "Settings directory created at: ./settings"
+echo "Logs directory created at: ./logs"
+echo "You can now edit configuration files in ./settings/"
+EOF
 
-# Run S2E
+    # Create s2e wrapper script (simulation execution)
+    cat > $out/bin/s2e << 'EOF'
+#!/usr/bin/env bash
+set -e
+
+if [ ! -d "./settings" ]; then
+  echo "Error: ./settings directory not found."
+  echo "Run 'nix run .#init' first to initialize settings."
+  exit 1
+fi
+
+mkdir -p ./logs
 exec @out@/bin/.s2e-wrapped "$@"
 EOF
 
+    chmod +x $out/bin/s2e-init
     chmod +x $out/bin/s2e
 
-    # Substitute @out@ placeholder
+    # Substitute @out@ placeholders
+    substituteInPlace $out/bin/s2e-init --replace '@out@' "$out"
     substituteInPlace $out/bin/s2e --replace '@out@' "$out"
 
     runHook postInstall

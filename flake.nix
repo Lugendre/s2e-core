@@ -20,9 +20,17 @@
         };
       };
 
-      apps.${system}.default = {
-        type = "app";
-        program = "${self.packages.${system}.default}/bin/s2e";
+      apps.${system} = {
+        # Initialize settings directory
+        init = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/s2e-init";
+        };
+        # Run S2E simulation (default)
+        default = {
+          type = "app";
+          program = "${self.packages.${system}.default}/bin/s2e";
+        };
       };
 
       devShells.${system}.default = pkgs.mkShell {
