@@ -35,6 +35,10 @@ Icon
 # Python
 __pycache__/
 
+# Nix
+result
+result-*
+
 # Setting files
 **/settings/environment/cspice
 **/settings/environment/space_weather
